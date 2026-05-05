@@ -20,6 +20,7 @@ WORKDIR /root/
 
 COPY --from=builder /app/api .
 COPY --from=builder /app/worker .
+COPY --from=builder /app/web ./web
 
 EXPOSE 8080
 
