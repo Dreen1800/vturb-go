@@ -27,15 +27,33 @@ func main() {
 	// Connect to database
 	db, err := pgxpool.New(context.Background(), cfg.Database.URL)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.Printf("⚠️  Failed to connect to database: %v", err)
+		log.Println("🔄 Retrying in 5 seconds...")
+		time.Sleep(5 * time.Second)
+		db, err = pgxpool.New(context.Background(), cfg.Database.URL)
+		if err != nil {
+			log.Fatalf("❌ Failed to connect to database after retry: %v", err)
+		}
 	}
 	defer db.Close()
 
 	// Test database connection
 	if err := db.Ping(context.Background()); err != nil {
-		log.Fatalf("Failed to ping database: %v", err)
+		log.Printf("⚠️  Failed to ping database: %v", err)
+		log.Println("🔄 Retrying in 5 seconds...")
+		time.Sleep(5 * time.Second)
+		if err := db.Ping(context.Background()); err != nil {
+			log.Fatalf("❌ Failed to ping database after retry: %v", err)
+		}
 	}
 	log.Println("✅ Connected to PostgreSQL")
+
+	// Run migrations
+	if err := runMigrations(db); err != nil {
+		log.Printf("⚠️  Failed to run migrations: %v", err)
+	} else {
+		log.Println("✅ Migrations completed")
+	}
 
 	// Initialize repositories and services
 	videoRepo := repository.NewVideoRepository(db)
@@ -147,4 +165,33 @@ func main() {
 	}
 
 	fmt.Println("👋 Server stopped gracefully")
+}
+
+func runMigrations(db *pgxpool.Pool) error {
+	migrationSQL := `
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+CREATE TABLE IF NOT EXISTS videos (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    filename VARCHAR(255),
+    size_bytes BIGINT,
+    status VARCHAR(50) DEFAULT 'pending',
+    embed_token VARCHAR(255) UNIQUE NOT NULL,
+    stream_uid VARCHAR(255),
+    stream_status VARCHAR(50),
+    manifest_url TEXT,
+    thumbnail_url TEXT,
+    duration_sec INT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_videos_status ON videos(status);
+CREATE INDEX IF NOT EXISTS idx_videos_embed_token ON videos(embed_token);
+CREATE INDEX IF NOT EXISTS idx_videos_stream_uid ON videos(stream_uid);
+`
+	_, err := db.Exec(context.Background(), migrationSQL)
+	return err
 }
