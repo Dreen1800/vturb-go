@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VTurb Go - Gerenciador de Vídeos</title>
+    <link rel="stylesheet" href="/web/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="logo">
+                <i class="fas fa-play-circle"></i>
+                <span>VTurb Go</span>
+            </div>
+            <ul class="nav-links">
+                <li class="active" data-page="dashboard">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </li>
+                <li data-page="gallery">
+                    <i class="fas fa-video"></i>
+                    <span>Galeria</span>
+                </li>
+                <li data-page="upload">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <span>Upload</span>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <h1 id="page-title">Dashboard</h1>
+                <div class="user-info">
+                    <span>MVP Mode</span>
+                </div>
+            </header>
+
+            <!-- Dashboard Page -->
+            <section id="dashboard" class="page active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <i class="fas fa-video"></i>
+                        <div class="stat-info">
+                            <h3 id="total-videos">0</h3>
+                            <p>Total de Vídeos</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-check-circle"></i>
+                        <div class="stat-info">
+                            <h3 id="ready-videos">0</h3>
+                            <p>Prontos</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-clock"></i>
+                        <div class="stat-info">
+                            <h3 id="pending-videos">0</h3>
+                            <p>Pendentes</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="recent-videos">
+                    <h2>Vídeos Recentes</h2>
+                    <div id="recent-videos-list" class="videos-grid">
+                        <div class="loading">Carregando...</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Gallery Page -->
+            <section id="gallery" class="page">
+                <div class="gallery-header">
+                    <h2>Todos os Vídeos</h2>
+                    <button class="btn btn-primary" onclick="app.navigate('upload')">
+                        <i class="fas fa-plus"></i> Novo Vídeo
+                    </button>
+                </div>
+                <div id="gallery-grid" class="videos-grid">
+                    <div class="loading">Carregando vídeos...</div>
+                </div>
+            </section>
+
+            <!-- Upload Page -->
+            <section id="upload" class="page">
+                <div class="upload-container">
+                    <div id="drop-zone" class="drop-zone">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <h3>Arraste e solte seu vídeo aqui</h3>
+                        <p>ou clique para selecionar</p>
+                        <input type="file" id="file-input" accept="video/*" hidden>
+                        <button class="btn btn-secondary" onclick="document.getElementById('file-input').click()">
+                            Selecionar Arquivo
+                        </button>
+                    </div>
+
+                    <div id="upload-form" class="upload-form" style="display: none;">
+                        <h3>Detalhes do Vídeo</h3>
+                        <div class="form-group">
+                            <label>Título</label>
+                            <input type="text" id="video-title" placeholder="Nome do vídeo">
+                        </div>
+                        <div class="form-group">
+                            <label>Arquivo</label>
+                            <div class="file-info">
+                                <span id="file-name"></span>
+                                <span id="file-size"></span>
+                            </div>
+                        </div>
+                        <div class="progress-container" style="display: none;">
+                            <div class="progress-bar">
+                                <div id="progress-fill" class="progress-fill"></div>
+                            </div>
+                            <span id="progress-text">0%</span>
+                        </div>
+                        <div class="upload-actions">
+                            <button class="btn btn-secondary" onclick="app.resetUpload()">Cancelar</button>
+                            <button class="btn btn-primary" id="btn-upload" onclick="app.startUpload()">
+                                <i class="fas fa-upload"></i> Fazer Upload
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Video Player Modal -->
+    <div id="player-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="app.closePlayer()">&times;</span>
+            <div class="player-container">
+                <video id="video-player" controls></video>
+            </div>
+            <div class="player-info">
+                <h3 id="player-title"></h3>
+                <div class="player-meta">
+                    <span id="player-status"></span>
+                    <span id="player-duration"></span>
+                </div>
+                <div class="embed-code">
+                    <label>Código Embed:</label>
+                    <textarea id="embed-code" readonly></textarea>
+                    <button class="btn btn-small" onclick="app.copyEmbed()">Copiar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script>
+        console.log('📝 HTML carregado, carregando app.js...');
+        // Fallback se app.js falhar
+        window.addEventListener('error', function(e) {
+            console.error('❌ Erro no JavaScript:', e.message);
+            document.body.innerHTML = '<div style="padding:20px;text-align:center;"><h2>Erro ao carregar aplicativo</h2><p>Verifique o console (F12) para detalhes.</p><button onclick="location.reload()">Recarregar</button></div>';
+        });
+    </script>
+    <script src="/web/js/app.js?v=3"></script>
+</body>
+</html>

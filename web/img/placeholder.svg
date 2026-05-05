@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="225" viewBox="0 0 400 225">
+  <rect width="400" height="225" fill="#f1f5f9"/>
+  <path d="M170 85 L170 140 L230 112.5 Z" fill="#94a3b8"/>
+  <text x="200" y="165" text-anchor="middle" fill="#64748b" font-family="sans-serif" font-size="14">Sem preview</text>
+</svg>
